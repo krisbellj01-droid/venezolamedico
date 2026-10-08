@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venezolanía Médica 🩺🇻🇪</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .option-card {
+            transition: all 0.2s ease;
+        }
+        .option-card:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between font-sans">
+
+    <!-- Header -->
+    <header class="py-4 bg-slate-950 border-b border-purple-900/50 text-center shadow-lg">
+        <h1 class="text-2xl md:text-3xl font-black tracking-wider text-purple-400">Venezolanía Médica 🩺🇻🇪</h1>
+        <p class="text-xs text-slate-400 mt-1">El arte de sobrevivir a la guardia y pasar semiología</p>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="max-w-2xl w-full mx-auto p-4 flex flex-col justify-center my-auto">
+        
+        <!-- Pantalla de Selección de Categoría (Ruleta / Menú) -->
+        <div id="category-screen" class="bg-slate-800/90 border border-slate-700 p-6 rounded-2xl shadow-2xl text-center">
+            <h2 class="text-xl font-bold text-slate-200 mb-2">¡Gira la ruleta o elige tu categoría!</h2>
+            <p class="text-xs text-slate-400 mb-6">Demuestra qué tanto sabes de lospasillos y los libros.</p>
+            
+            <div id="category-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Se generan con JS -->
+            </div>
+            
+            <div class="mt-6 text-sm text-purple-300 font-semibold">
+                Puntuación actual: <span id="current-score" class="text-white font-bold">0</span> pts 🎯
+            </div>
+        </div>
+
+        <!-- Pantalla de Pregunta -->
+        <div id="game-screen" class="hidden bg-slate-800/90 border border-slate-700 p-6 rounded-2xl shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <span id="category-badge" class="px-3 py-1 bg-purple-900/60 border border-purple-500/50 text-purple-300 rounded-full text-xs font-bold uppercase">Categoría</span>
+                <span id="timer" class="text-xs font-bold text-amber-400">⏱️ 15s</span>
+            </div>
+
+            <h3 id="question-text" class="text-lg md:text-xl font-medium text-slate-100 mb-6">Cargando pregunta...</h3>
+
+            <div id="options-container" class="grid grid-cols-1 gap-3">
+                <!-- Se inyectan con JS -->
+            </div>
+
+            <div id="feedback-msg" class="mt-4 text-center font-bold text-sm hidden"></div>
+        </div>
+
+        <!-- Pantalla de Fin de Ronda -->
+        <div id="game-over-screen" class="hidden bg-slate-800/90 border border-slate-700 p-6 rounded-2xl shadow-2xl text-center">
+            <h2 class="text-2xl font-bold text-purple-400 mb-2">¡Ronda Finalizada! 🎉</h2>
+            <p id="final-score-text" class="text-slate-300 mb-6 text-sm"></p>
+            <button onclick="reiniciarJuego()" class="px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold transition shadow-lg text-white">
+                Volver a Jugar
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-500">
+        Hecho con sazón criolla y vocación clínica ⚡
+    </footer>
+
+    <!-- Lógica del Juego -->
+    <script>
+        const basePreguntas = {
+            "semiologia": {
+                nombre: "🩺 Semiología Pura",
+                color: "bg-blue-600/30 border-blue-500 text-blue-300",
+                preguntas: [
+                    {
+                        pregunta: "¿Cómo se le llama clásicamente al hallazgo semiológico de palidez cutaneomucosa acompañada de tinte ictérico leve ('color café con leche alimonado')?",
+                        opciones: ["Signo de Musset", "Íctero flavínico (típico de Anemia Perniciosa)", "Signo de Courvoisier-Terrier", "Facies peritoneal"],
+                        correcta: 1
+                    },
+                    {
+                        pregunta: "¿El edema de origen cardíaco se caracteriza por ser predominantemente de qué tipo?",
+                        opciones: ["Matutino, blando y localizado en párpados", "Vespertino, simétrico, frío y de fácil fóvea", "Unilateral, caliente y doloroso", "Pruriginoso y de aparición matutina"],
+                        correcta: 1
+                    }
+                ]
+            },
+            "hospital": {
+                nombre: "🏥 Fauna Hospitalaria",
+                color: "bg-amber-600/30 border-amber-500 text-amber-300",
+                preguntas: [
+                    {
+                        pregunta: "¿Cuál es el reflejo incondicionado más rápido de un médico residente de guardia al escuchar que suena el teléfono a las 3:00 a.m.?",
+                        opciones: ["Contestar con una sonrisa corporativa", "Acelerar la taquicardia sinusal hasta 140 lpm", "Dormir más profundo por negación", "Ofrecer café a todo el servicio"],
+                        correcta: 1
+                    },
+                    {
+                        pregunta: "En la jerga de pasillo de emergencia, ¿qué significa cuando dicen que un paciente llegó 'camuflado'?",
+                        opciones: ["Viste ropa militar", "Viene con un cuadro clínico confuso que parece una cosa pero es otra totalmente distinta", "Viene disfrazado de guardia", "No tiene signos vitales"],
+                        correcta: 1
+                    }
+                ]
+            },
+            "farma": {
+                nombre: "💊 Farmacología Criolla",
+                color: "bg-emerald-600/30 border-emerald-500 text-emerald-300",
+                preguntas: [
+                    {
+                        pregunta: "¿Qué combinación mítica popular en las emergencias venezolanas se usa para calmar casi cualquier dolor abdominal agudo inespecífico antes de tener diagnóstico?",
+                        opciones: ["Agua bendita y manzanilla", "Buscapina compuesta (Hioscina + Dipirona) IV", "Paracetamol en gotas", "Solución 0.9% sola a chorro"],
+                        correcta: 1
+                    },
+                    {
+                        pregunta: "¿Cuál es el analgésico de rescate por excelencia que el paciente venezolano siempre te pide por su nombre comercial exacto?",
+                        opciones: ["Aspirina junior", "Atamel (Acetaminofén)", "Dolex forte", "Diclofenac sódico"],
+                        correcta: 1
+                    }
+                ]
+            },
+            "criollo": {
+                nombre: "🇻🇪 ¿Cual Vaina Es?",
+                color: "bg-purple-600/30 border-purple-500 text-purple-300",
+                preguntas: [
+                    {
+                        pregunta: "Si un paciente llega diciéndote: 'Doctor, tengo un treque-treque en el pecho y me da un payaseo', traduciéndolo al castellano médico, ¿a qué se refiere?",
+                        opciones: ["A un cuadro psiquiátrico agudo", "A palpitaciones y sensación de mareo o taquicardia paroxística", "A dolor osteomuscular por mala postura", "A un cólico biliar típico"],
+                        correcta: 1
+                    },
+                    {
+                        pregunta: "Cuando en el retén o la emergencia de un hospital dicen que 'se armó la cayena', ¿qué está pasando?",
+                        opciones: ["Sembraron flores en el jardín", "Llegó un colapso masivo de pacientes o una emergencia crítica simultánea", "Se fue la luz del sector", "Trajeron almuerzo para todos"],
+                        correcta: 1
+                    }
+                ]
+            }
+        };
+
+        let puntaje = 0;
+        let preguntaActual = null;
+        let temporizador = null;
+        let tiempoRestante = 15;
+
+        const categoryScreen = document.getElementById("category-screen");
+        const gameScreen = document.getElementById("game-screen");
+        const gameOverScreen = document.getElementById("game-over-screen");
+        const categoryButtons = document.getElementById("category-buttons");
+        const currentScoreEl = document.getElementById("current-score");
+
+        function iniciarJuego() {
+            puntaje = 0;
+            currentScoreEl.innerText = puntaje;
+            gameOverScreen.classList.add("hidden");
+            gameScreen.classList.add("hidden");
+            categoryScreen.classList.remove("hidden");
+            renderizarCategorias();
+        }
+
+        function renderizarCategorias() {
+            categoryButtons.innerHTML = "";
+            Object.keys(basePreguntas).forEach(key => {
+                const cat = basePreguntas[key];
+                const btn = document.createElement("button");
+                btn.className = `p-4 rounded-xl border ${cat.color} font-bold text-left shadow-lg hover:scale-102 transition flex justify-between items-center`;
+                btn.innerHTML = `<span>${cat.nombre}</span> <span class="text-xs opacity-75">Jugar ➡️</span>`;
+                btn.onclick = () => seleccionarCategoria(key);
+                categoryButtons.appendChild(btn);
+            });
+        }
+
+        function seleccionarCategoria(key) {
+            const cat = basePreguntas[key];
+            // Elegir pregunta aleatoria de la categoría
+            const lista = cat.preguntas;
+            preguntaActual = lista[Math.floor(Math.random() * lista.length)];
+            preguntaActual.categoriaNombre = cat.nombre;
+
+            categoryScreen.classList.add("hidden");
+            gameScreen.classList.remove("hidden");
+            cargarPreguntaEnPantalla();
+        }
+
+        function cargarPreguntaEnPantalla() {
+            document.getElementById("category-badge").innerText = preguntaActual.categoriaNombre;
+            document.getElementById("question-text").innerText = preguntaActual.pregunta;
+            
+            const optionsContainer = document.getElementById("options-container");
+            optionsContainer.innerHTML = "";
+            
+            const feedbackMsg = document.getElementById("feedback-msg");
+            feedbackMsg.classList.add("hidden");
+
+            preguntaActual.opciones.forEach((opcion, idx) => {
+                const btn = document.createElement("button");
+                btn.className = "option-card p-3 bg-slate-700/80 border border-slate-600 rounded-xl text-left text-sm font-medium hover:bg-slate-600 transition flex items-center gap-3 text-slate-100";
+                btn.innerHTML = `<span class="text-purple-400 font-bold">${String.fromCharCode(65 + idx)}.</span> ${opcion}`;
+                btn.onclick = () => verificarRespuesta(idx, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            iniciarTemporizador();
+        }
+
+        function iniciarTemporizador() {
+            tiempoRestante = 15;
+            const timerEl = document.getElementById("timer");
+            timerEl.innerText = `⏱️ ${tiempoRestante}s`;
+            
+            clearInterval(temporizador);
+            temporizador = setInterval(() => {
+                tiempoRestante--;
+                timerEl.innerText = `⏱️ ${tiempoRestante}s`;
+                if (tiempoRestante <= 0) {
+                    clearInterval(temporizador);
+                    tiempoAgotado();
+                }
+            }, 1000);
+        }
+
+        function tiempoAgotado() {
+            const botones = document.querySelectorAll("#options-container button");
+            botones.forEach(b => b.disabled = true);
+            
+            const feedbackMsg = document.getElementById("feedback-msg");
+            feedbackMsg.innerText = "⌛ ¡Se acabó el tiempo!";
+            feedbackMsg.className = "mt-4 text-center font-bold text-sm text-amber-400";
+            feedbackMsg.classList.remove("hidden");
+
+            setTimeout(finalizarRonda, 2000);
+        }
+
+        function verificarRespuesta(seleccionada, boton) {
+            clearInterval(temporizador);
+            const botones = document.querySelectorAll("#options-container button");
+            botones.forEach(b => b.disabled = true);
+
+            const feedbackMsg = document.getElementById("feedback-msg");
+            feedbackMsg.classList.remove("hidden");
+
+            if (seleccionada === preguntaActual.correcta) {
+                boton.classList.remove("bg-slate-700/80", "border-slate-600");
+                boton.classList.add("bg-emerald-600/90", "border-emerald-500", "text-white");
+                feedbackMsg.innerText = "¡Correcto! ¡Te ganaste el aplauso del pase de visita! 🌟";
+                feedbackMsg.className = "mt-4 text-center font-bold text-sm text-emerald-400";
+                puntaje += 10;
+                currentScoreEl.innerText = puntaje;
+            } else {
+                boton.classList.remove("bg-slate-700/80", "border-slate-600");
+                boton.classList.add("bg-rose-600/90", "border-rose-500", "text-white");
+                
+                // Mostrar la correcta
+                botones[preguntaActual.correcta].classList.remove("bg-slate-700/80", "border-slate-600");
+                botones[preguntaActual.correcta].classList.add("bg-emerald-600/90", "border-emerald-500", "text-white");
+                
+                feedbackMsg.innerText = "¡Ay, mi madre! Fallaste el diagnóstico.";
+                feedbackMsg.className = "mt-4 text-center font-bold text-sm text-rose-400";
+            }
+
+            setTimeout(finalizarRonda, 2500);
+        }
+
+        function finalizarRonda() {
+            gameScreen.classList.add("hidden");
+            gameOverScreen.classList.remove("hidden");
+            document.getElementById("final-score-text").innerText = `Acumulaste un total de ${puntaje} puntos en esta sesión clínica. ¡Todo un especialista de guardia!`;
+        }
+
+        function reiniciarJuego() {
+            iniciarJuego();
+        }
+
+        // Arrancar
+        window.onload = iniciarJuego;
+    </script>
+</body>
+</html>
